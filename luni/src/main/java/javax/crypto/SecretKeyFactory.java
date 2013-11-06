@@ -24,7 +24,12 @@ import java.security.Provider;
 import java.security.Security;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
+
+import javax.crypto.spec.PBEKeySpec;
+
 import org.apache.harmony.security.fortress.Engine;
+
+import dalvik.system.Taint;
 
 
 /**
@@ -183,6 +188,14 @@ public class SecretKeyFactory {
      */
     public final SecretKey generateSecret(KeySpec keySpec)
             throws InvalidKeySpecException {
+    	if (algorithm == "PBKDF2WithHmacSHA1") {
+    		if (keySpec instanceof PBEKeySpec) {
+    			PBEKeySpec pbe = (PBEKeySpec) keySpec;
+    			if (pbe.isTainted()) {
+    				Taint.log("Password went into PBKDF2WithHmacSHA1(" + pbe.getTaintMessage() + ")");
+    			}
+    		}
+    	}
         return spiImpl.engineGenerateSecret(keySpec);
     }
 

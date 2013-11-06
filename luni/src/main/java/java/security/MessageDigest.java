@@ -20,6 +20,10 @@ package java.security;
 import java.nio.ByteBuffer;
 import org.apache.harmony.security.fortress.Engine;
 
+//begin WITH_TAINT_TRACKING
+import dalvik.system.Taint;
+//end WITH_TAINT_TRACKING
+
 /**
  * Uses a one-way hash function to turn an arbitrary number of bytes into a
  * fixed-length byte sequence. The original arbitrary-length sequence is the
@@ -180,6 +184,12 @@ public abstract class MessageDigest extends MessageDigestSpi {
      * @see #reset()
      */
     public void update(byte arg0) {
+    	// begin WITH_TAINT_TRACKING
+    	int tag = Taint.getTaintByte(arg0);
+    	if ((tag & Taint.TAINT_PASSSWORD) != 0) {
+			Taint.log("Password went into " + toString());
+		}
+    	// end WITH_TAINT_TRACKING
         engineUpdate(arg0);
     }
 
@@ -197,6 +207,12 @@ public abstract class MessageDigest extends MessageDigestSpi {
      *             {@code input}
      */
     public void update(byte[] input, int offset, int len) {
+    	// begin WITH_TAINT_TRACKING
+    	int tag = Taint.getTaintByteArray(input);
+    	if ((tag & Taint.TAINT_PASSSWORD) != 0) {
+			Taint.log("Password went into " + toString());
+		}
+    	// end WITH_TAINT_TRACKING
         if (input == null ||
         // offset < 0 || len < 0 ||
                 // checks for negative values are commented out intentionally
@@ -230,7 +246,14 @@ public abstract class MessageDigest extends MessageDigestSpi {
      * @see #reset
      */
     public byte[] digest() {
-        return engineDigest();
+    	byte[] d = engineDigest(); 
+    	// begin WITH_TAINT_TRACKING
+    	int tag = Taint.getTaintByteArray(d);
+    	if ((tag & Taint.TAINT_PASSSWORD) != 0) {
+			Taint.log("Password was digested with " + toString());
+		}
+    	// end WITH_TAINT_TRACKING
+        return d;
     }
 
     /**
@@ -259,7 +282,14 @@ public abstract class MessageDigest extends MessageDigestSpi {
                 (long) offset + (long) len > buf.length) {
             throw new IllegalArgumentException();
         }
-        return engineDigest(buf, offset, len);
+        int d = engineDigest(buf, offset, len);
+        // begin WITH_TAINT_TRACKING
+    	int tag = Taint.getTaintInt(d);
+    	if ((tag & Taint.TAINT_PASSSWORD) != 0) {
+			Taint.log("Password was digested with " + toString());
+		}
+    	// end WITH_TAINT_TRACKING
+    	return d;
     }
 
     /**
@@ -274,7 +304,14 @@ public abstract class MessageDigest extends MessageDigestSpi {
      */
     public byte[] digest(byte[] input) {
         update(input);
-        return digest();
+        byte[] d = digest();
+        // begin WITH_TAINT_TRACKING
+    	int tag = Taint.getTaintByteArray(d);
+    	if ((tag & Taint.TAINT_PASSSWORD) != 0) {
+			Taint.log("Password was digested with " + toString());
+		}
+    	// end WITH_TAINT_TRACKING
+        return d;
     }
 
     /**

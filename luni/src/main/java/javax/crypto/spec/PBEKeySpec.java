@@ -21,6 +21,10 @@ import java.security.spec.KeySpec;
 import java.util.Arrays;
 import libcore.util.EmptyArray;
 
+//begin WITH_TAINT_TRACKING
+import dalvik.system.Taint;
+//end WITH_TAINT_TRACKING
+
 /**
  * The key specification for a <i>password based encryption</i> key.
  * <p>
@@ -29,166 +33,196 @@ import libcore.util.EmptyArray;
  */
 public class PBEKeySpec implements KeySpec {
 
-    private char[] password;
-    private final byte[] salt;
-    private final int iterationCount;
-    private final int keyLength;
+	private char[] password;
+	private final byte[] salt;
+	private final int iterationCount;
+	private final int keyLength;
 
-    /**
-     * Creates a new <code>PBEKeySpec</code> with the specified password.
-     *
-     * @param password
-     *            the password.
-     */
-    public PBEKeySpec(char[] password) {
-        if (password == null) {
-            this.password = EmptyArray.CHAR;
-        } else {
-            this.password = new char[password.length];
-            System.arraycopy(password, 0, this.password, 0, password.length);
-        }
-        salt = null;
-        iterationCount = 0;
-        keyLength = 0;
-    }
+	// begin WITH_TAINT_TRACKING
+	
+	public boolean isTainted() {
+		int tag = Taint.getTaintCharArray(password);
+		// for now just consider the password taint
+		if ((tag & Taint.TAINT_PASSSWORD) != 0) {
+			return true;
+		}
+		return false;
+	}
 
-    /**
-     * Creates a new <code>PBEKeySpec</code> with the specified password, salt,
-     * iteration count and the desired length of the derived key.
-     *
-     * @param password
-     *            the password.
-     * @param salt
-     *            the salt.
-     * @param iterationCount
-     *            the iteration count.
-     * @param keyLength
-     *            the desired key length of the derived key,
-     * @throws NullPointerException
-     *             if the salt is null.
-     * @throws IllegalArgumentException
-     *             if the salt is empty, iteration count is zero or negative or
-     *             the key length is zero or negative.
-     */
-    public PBEKeySpec(char[] password, byte[] salt, int iterationCount,
-                      int keyLength) {
-        if (salt == null) {
-            throw new NullPointerException("salt == null");
-        }
-        if (salt.length == 0) {
-            throw new IllegalArgumentException("salt.length == 0");
-        }
-        if (iterationCount <= 0) {
-            throw new IllegalArgumentException("iterationCount <= 0");
-        }
-        if (keyLength <= 0) {
-            throw new IllegalArgumentException("keyLength <= 0");
-        }
+	public String getTaintMessage() {
+		return String.format(
+				"PBEKeySpec with %d iterations, %d keylength and %d saltsize",
+				iterationCount, keyLength, salt.length);
+	}
 
-        if (password == null) {
-            this.password = EmptyArray.CHAR;
-        } else {
-            this.password = new char[password.length];
-            System.arraycopy(password, 0, this.password, 0, password.length);
-        }
-        this.salt = new byte[salt.length];
-        System.arraycopy(salt, 0, this.salt, 0, salt.length);
-        this.iterationCount = iterationCount;
-        this.keyLength = keyLength;
-    }
+	private void checkTaint() {
+		int tag = Taint.getTaintCharArray(password);
+		if ((tag & Taint.TAINT_PASSSWORD) != 0) {
+			Taint.log("Password went into " + getTaintMessage());
+		}
+	}
 
-    /**
-     * Creates a new <code>PBEKeySpec</code> with the specified password, salt
-     * and iteration count.
-     *
-     * @param password
-     *            the password.
-     * @param salt
-     *            the salt.
-     * @param iterationCount
-     *            the iteration count.
-     * @throws NullPointerException
-     *             if salt is null.
-     * @throws IllegalArgumentException
-     *             if the salt is empty or iteration count is zero or negative.
-     */
-    public PBEKeySpec(char[] password, byte[] salt, int iterationCount) {
-        if (salt == null) {
-            throw new NullPointerException("salt == null");
-        }
-        if (salt.length == 0) {
-            throw new IllegalArgumentException("salt.length == 0");
-        }
-        if (iterationCount <= 0) {
-            throw new IllegalArgumentException("iterationCount <= 0");
-        }
+	// end WITH_TAINT_TRACKING
 
-        if (password == null) {
-            this.password = EmptyArray.CHAR;
-        } else {
-            this.password = new char[password.length];
-            System.arraycopy(password, 0, this.password, 0, password.length);
-        }
-        this.salt = new byte[salt.length];
-        System.arraycopy(salt, 0, this.salt, 0, salt.length);
-        this.iterationCount = iterationCount;
-        this.keyLength = 0;
-    }
+	/**
+	 * Creates a new <code>PBEKeySpec</code> with the specified password.
+	 * 
+	 * @param password
+	 *            the password.
+	 */
+	public PBEKeySpec(char[] password) {
+		// begin WITH_TAINT_TRACKING
+		checkTaint();
+		// end WITH_TAINT_TRACKING
 
-    /**
-     * Clears the password by overwriting it.
-     */
-    public final void clearPassword() {
-        Arrays.fill(password, '?');
-        password = null;
-    }
+		if (password == null) {
+			this.password = EmptyArray.CHAR;
+		} else {
+			this.password = new char[password.length];
+			System.arraycopy(password, 0, this.password, 0, password.length);
+		}
+		salt = null;
+		iterationCount = 0;
+		keyLength = 0;
+	}
 
-    /**
-     * Returns a copy of the password of this key specification.
-     *
-     * @return a copy of the password of this key specification.
-     * @throws IllegalStateException
-     *             if the password has been cleared before.
-     */
-    public final char[] getPassword() {
-        if (password == null) {
-            throw new IllegalStateException("The password has been cleared");
-        }
-        char[] result = new char[password.length];
-        System.arraycopy(password, 0, result, 0, password.length);
-        return result;
-    }
+	/**
+	 * Creates a new <code>PBEKeySpec</code> with the specified password, salt,
+	 * iteration count and the desired length of the derived key.
+	 * 
+	 * @param password
+	 *            the password.
+	 * @param salt
+	 *            the salt.
+	 * @param iterationCount
+	 *            the iteration count.
+	 * @param keyLength
+	 *            the desired key length of the derived key,
+	 * @throws NullPointerException
+	 *             if the salt is null.
+	 * @throws IllegalArgumentException
+	 *             if the salt is empty, iteration count is zero or negative or
+	 *             the key length is zero or negative.
+	 */
+	public PBEKeySpec(char[] password, byte[] salt, int iterationCount,
+			int keyLength) {
+		if (salt == null) {
+			throw new NullPointerException("salt == null");
+		}
+		if (salt.length == 0) {
+			throw new IllegalArgumentException("salt.length == 0");
+		}
+		if (iterationCount <= 0) {
+			throw new IllegalArgumentException("iterationCount <= 0");
+		}
+		if (keyLength <= 0) {
+			throw new IllegalArgumentException("keyLength <= 0");
+		}
 
-    /**
-     * Returns a copy of the salt of this key specification.
-     *
-     * @return a copy of the salt of this key specification or null if none is
-     *         specified.
-     */
-    public final byte[] getSalt() {
-        if (salt == null) {
-            return null;
-        }
-        byte[] result = new byte[salt.length];
-        System.arraycopy(salt, 0, result, 0, salt.length);
-        return result;
-    }
+		if (password == null) {
+			this.password = EmptyArray.CHAR;
+		} else {
+			this.password = new char[password.length];
+			System.arraycopy(password, 0, this.password, 0, password.length);
+		}
+		this.salt = new byte[salt.length];
+		System.arraycopy(salt, 0, this.salt, 0, salt.length);
+		this.iterationCount = iterationCount;
+		this.keyLength = keyLength;
+	}
 
-    /**
-     * Returns the iteration count of this key specification.
-     *
-     * @return the iteration count of this key specification.
-     */
-    public final int getIterationCount() {
-        return iterationCount;
-    }
+	/**
+	 * Creates a new <code>PBEKeySpec</code> with the specified password, salt
+	 * and iteration count.
+	 * 
+	 * @param password
+	 *            the password.
+	 * @param salt
+	 *            the salt.
+	 * @param iterationCount
+	 *            the iteration count.
+	 * @throws NullPointerException
+	 *             if salt is null.
+	 * @throws IllegalArgumentException
+	 *             if the salt is empty or iteration count is zero or negative.
+	 */
+	public PBEKeySpec(char[] password, byte[] salt, int iterationCount) {
+		if (salt == null) {
+			throw new NullPointerException("salt == null");
+		}
+		if (salt.length == 0) {
+			throw new IllegalArgumentException("salt.length == 0");
+		}
+		if (iterationCount <= 0) {
+			throw new IllegalArgumentException("iterationCount <= 0");
+		}
 
-    /**
-     * Returns the desired key length of the derived key.
-     *
-     * @return the desired key length of the derived key.
-     */
-    public final int getKeyLength() {
-        return keyLength;
-    }
+		if (password == null) {
+			this.password = EmptyArray.CHAR;
+		} else {
+			this.password = new char[password.length];
+			System.arraycopy(password, 0, this.password, 0, password.length);
+		}
+		this.salt = new byte[salt.length];
+		System.arraycopy(salt, 0, this.salt, 0, salt.length);
+		this.iterationCount = iterationCount;
+		this.keyLength = 0;
+	}
+
+	/**
+	 * Clears the password by overwriting it.
+	 */
+	public final void clearPassword() {
+		Arrays.fill(password, '?');
+		password = null;
+	}
+
+	/**
+	 * Returns a copy of the password of this key specification.
+	 * 
+	 * @return a copy of the password of this key specification.
+	 * @throws IllegalStateException
+	 *             if the password has been cleared before.
+	 */
+	public final char[] getPassword() {
+		if (password == null) {
+			throw new IllegalStateException("The password has been cleared");
+		}
+		char[] result = new char[password.length];
+		System.arraycopy(password, 0, result, 0, password.length);
+		return result;
+	}
+
+	/**
+	 * Returns a copy of the salt of this key specification.
+	 * 
+	 * @return a copy of the salt of this key specification or null if none is
+	 *         specified.
+	 */
+	public final byte[] getSalt() {
+		if (salt == null) {
+			return null;
+		}
+		byte[] result = new byte[salt.length];
+		System.arraycopy(salt, 0, result, 0, salt.length);
+		return result;
+	}
+
+	/**
+	 * Returns the iteration count of this key specification.
+	 * 
+	 * @return the iteration count of this key specification.
+	 */
+	public final int getIterationCount() {
+		return iterationCount;
+	}
+
+	/**
+	 * Returns the desired key length of the derived key.
+	 * 
+	 * @return the desired key length of the derived key.
+	 */
+	public final int getKeyLength() {
+		return keyLength;
+	}
 }
