@@ -20,6 +20,7 @@
 package dalvik.system;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 
 /**
  * Provides a Taint interface for the Dalvik VM. This class is used for
@@ -46,9 +47,40 @@ public final class Taint {
     public static final int TAINT_ACCOUNT       = 0x00004000;
     public static final int TAINT_HISTORY       = 0x00008000;
     
-	// add a new taint type for user supplied password
-	public static final int TAINT_PASSSWORD     = 0x00010000;
-
+	// add a new taint tag for user supplied passwords
+	public static final int TAINT_PASSWORD     = 0x00010000;
+	
+	private static final HashMap<Integer, String> taintToStringMap = new HashMap<Integer, String>();
+	
+	static {
+		taintToStringMap.put(TAINT_CLEAR, "Clear");
+		taintToStringMap.put(TAINT_LOCATION, "Location");
+		taintToStringMap.put(TAINT_CONTACTS, "Contacts");
+		taintToStringMap.put(TAINT_MIC, "Microphone");
+		taintToStringMap.put(TAINT_MIC, "Microphone");
+		taintToStringMap.put(TAINT_PHONE_NUMBER, "Phone Number");
+		taintToStringMap.put(TAINT_LOCATION_GPS, "Location (GPS)");
+		taintToStringMap.put(TAINT_LOCATION_NET, "Location (Network)");
+		taintToStringMap.put(TAINT_LOCATION_LAST, "Location (Last)");
+		taintToStringMap.put(TAINT_CAMERA, "Camera");
+		taintToStringMap.put(TAINT_ACCELEROMETER, "Accelerometer");
+		taintToStringMap.put(TAINT_SMS, "SMS");
+		taintToStringMap.put(TAINT_IMEI, "IMEI");
+		taintToStringMap.put(TAINT_IMSI, "IMSI");
+		taintToStringMap.put(TAINT_ICCID, "ICCID");
+		taintToStringMap.put(TAINT_DEVICE_SN, "Device Serial Number");
+		taintToStringMap.put(TAINT_ACCOUNT, "Account");
+		taintToStringMap.put(TAINT_HISTORY, "History");
+		taintToStringMap.put(TAINT_PASSWORD, "Password");
+	}
+	
+	public static String getTaintTagName(int tag) {
+		if (taintToStringMap.containsKey(new Integer(tag))) {
+			return taintToStringMap.get(new Integer(tag));
+		} else {
+			return "Unkown Tag";
+		}
+	}
     
     // how many bytes of tainted network output data to print to log?
     public static final int dataBytesToLog = 100;

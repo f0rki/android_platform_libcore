@@ -231,7 +231,9 @@ public final class Posix implements Os {
             if (tag != Taint.TAINT_CLEAR) {
                 String addr = (fd.hasName) ? fd.name : "unknown";
                 String tstr = "0x" + Integer.toHexString(tag);
-                Taint.log("libcore.os.sendto(" + addr + ") received a ByteBuffer with tag " + tstr);
+				Taint.log("libcore.os.sendto(" + addr
+						+ ") received data containing"
+						+ Taint.getTaintTagName(tag) + " (tag=" + tstr + ")");
             }
 // end WITH_TAINT_TRACKING
             return sendtoBytes(fd, buffer, buffer.position(), buffer.remaining(), flags, inetAddress, port);
@@ -256,7 +258,10 @@ public final class Posix implements Os {
                 dstr = dstr.replaceAll("\\p{C}", ".");
                 String addr = (fd.hasName) ? fd.name : "unknown";
     	        String tstr = "0x" + Integer.toHexString(tag);
-                Taint.log("libcore.os.send("+addr+") received data with tag " + tstr + " data=["+dstr+"] ");
+				Taint.log("libcore.os.send(" + addr
+						+ ") received data containing"
+						+ Taint.getTaintTagName(tag) + " (tag=" + tstr
+						+ ") data=[" + dstr + "]");
             }
         }
 	return sendtoBytesImpl(fd, buffer, byteOffset, byteCount, flags, inetAddress, port);

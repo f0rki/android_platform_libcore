@@ -23,6 +23,7 @@ import libcore.util.EmptyArray;
 
 //begin WITH_TAINT_TRACKING
 import dalvik.system.Taint;
+
 //end WITH_TAINT_TRACKING
 
 /**
@@ -39,11 +40,10 @@ public class PBEKeySpec implements KeySpec {
 	private final int keyLength;
 
 	// begin WITH_TAINT_TRACKING
-	
 	public boolean isTainted() {
 		int tag = Taint.getTaintCharArray(password);
 		// for now just consider the password taint
-		if ((tag & Taint.TAINT_PASSSWORD) != 0) {
+		if ((tag & Taint.TAINT_PASSWORD) != 0) {
 			return true;
 		}
 		return false;
@@ -57,11 +57,10 @@ public class PBEKeySpec implements KeySpec {
 
 	private void checkTaint() {
 		int tag = Taint.getTaintCharArray(password);
-		if ((tag & Taint.TAINT_PASSSWORD) != 0) {
+		if ((tag & Taint.TAINT_PASSWORD) != 0) {
 			Taint.log("Password went into " + getTaintMessage());
 		}
 	}
-
 	// end WITH_TAINT_TRACKING
 
 	/**

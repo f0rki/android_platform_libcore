@@ -32,8 +32,11 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Set;
+
 import org.apache.harmony.crypto.internal.NullCipherSpi;
 import org.apache.harmony.security.fortress.Engine;
+
+import dalvik.system.Taint;
 
 /**
  * This class provides access to implementations of cryptographic ciphers for
@@ -441,6 +444,20 @@ public class Cipher {
         //        }
 
     }
+    
+//begin WITH_TAINT_TRACKING
+    private void checkIfTainted(int tag) {
+    	if (tag != Taint.TAINT_CLEAR) {
+			Taint.log("Cipher(" + getAlgorithm() + "): "
+					+ Taint.getTaintTagName(tag)
+					+ " used as (part of) the key ");
+		}
+    }
+    
+	private void checkForKeyTaint(Key key) {
+		checkIfTainted(Taint.getTaintByteArray(key.getEncoded()));
+  	}
+//end WITH_TAINT_TRACKING
 
     /**
      * Initializes this cipher instance with the specified key.
@@ -516,6 +533,9 @@ public class Cipher {
         //        FIXME InvalidKeyException
         //        if keysize exceeds the maximum allowable keysize
         //        (jurisdiction policy files)
+//begin WITH_TAINT_TRACKING
+        checkForKeyTaint(key);
+//end WITH_TAINT_TRACKING
         spiImpl.engineInit(opmode, key, random);
         mode = opmode;
     }
@@ -613,6 +633,9 @@ public class Cipher {
         //        FIXME InvalidAlgorithmParameterException
         //        cryptographic strength exceed the legal limits
         //        (jurisdiction policy files)
+//begin WITH_TAINT_TRACKING
+        checkForKeyTaint(key);
+//end WITH_TAINT_TRACKING
         spiImpl.engineInit(opmode, key, params, random);
         mode = opmode;
     }
@@ -704,6 +727,9 @@ public class Cipher {
         //        FIXME InvalidAlgorithmParameterException
         //        cryptographic strength exceed the legal limits
         //        (jurisdiction policy files)
+//begin WITH_TAINT_TRACKING
+        checkForKeyTaint(key);
+//end WITH_TAINT_TRACKING
         spiImpl.engineInit(opmode, key, params, random);
         mode = opmode;
     }
@@ -831,6 +857,25 @@ public class Cipher {
         spiImpl.engineInit(opmode, certificate.getPublicKey(), random);
         mode = opmode;
     }
+        
+//begin WITH_TAINT_TRACKING    
+    private void isPasswordTainted(int tag) {
+    	if ((tag & Taint.TAINT_PASSWORD) != 0)
+			Taint.log("Password went into Cipher(" + getAlgorithm() + ")");
+    }
+    
+    private void checkForPasswordTaint(byte input) {
+    	isPasswordTainted(Taint.getTaintByte(input));
+    }
+    
+    private void checkForPasswordTaint(byte[] input) {
+    	isPasswordTainted(Taint.getTaintByteArray(input));
+    }
+    
+    private void checkForPasswordTaint(ByteBuffer input) {
+    	isPasswordTainted(input.getDirectByteBufferTaint());
+    }
+//end WITH_TAINT_TRACKING
 
     /**
      * Continues a multi-part transformation (encryption or decryption). The
@@ -856,6 +901,10 @@ public class Cipher {
         if (input.length == 0) {
             return null;
         }
+        
+//begin WITH_TAINT_TRACKING
+        checkForPasswordTaint(input);
+//end WITH_TAINT_TRACKING
         return spiImpl.engineUpdate(input, 0, input.length);
     }
 
@@ -890,6 +939,9 @@ public class Cipher {
         if (input.length == 0) {
             return null;
         }
+//begin WITH_TAINT_TRACKING
+        checkForPasswordTaint(input);
+//end WITH_TAINT_TRACKING
         return spiImpl.engineUpdate(input, inputOffset, inputLen);
     }
 
@@ -986,6 +1038,9 @@ public class Cipher {
         if (input.length == 0) {
             return 0;
         }
+//begin WITH_TAINT_TRACKING
+        checkForPasswordTaint(input);
+//end WITH_TAINT_TRACKING        
         return spiImpl.engineUpdate(input, inputOffset, inputLen, output,
                 outputOffset);
     }
@@ -1022,6 +1077,9 @@ public class Cipher {
         if (input == output) {
             throw new IllegalArgumentException("input == output");
         }
+//begin WITH_TAINT_TRACKING
+        checkForPasswordTaint(input);
+//end WITH_TAINT_TRACKING
         return spiImpl.engineUpdate(input, output);
     }
 
@@ -1108,6 +1166,9 @@ public class Cipher {
         if (mode != ENCRYPT_MODE && mode != DECRYPT_MODE) {
             throw new IllegalStateException();
         }
+//begin WITH_TAINT_TRACKING
+        checkForPasswordTaint(input);
+//end WITH_TAINT_TRACKING
         return spiImpl.engineDoFinal(input, 0, input.length);
     }
 
@@ -1143,6 +1204,9 @@ public class Cipher {
             throw new IllegalStateException();
         }
         checkInputOffsetAndCount(input.length, inputOffset, inputLen);
+//begin WITH_TAINT_TRACKING
+        checkForPasswordTaint(input);
+//end WITH_TAINT_TRACKING
         return spiImpl.engineDoFinal(input, inputOffset, inputLen);
     }
 
@@ -1221,6 +1285,9 @@ public class Cipher {
             throw new IllegalStateException();
         }
         checkInputOffsetAndCount(input.length, inputOffset, inputLen);
+//begin WITH_TAINT_TRACKING
+        checkForPasswordTaint(input);
+//end WITH_TAINT_TRACKING
         return spiImpl.engineDoFinal(input, inputOffset, inputLen, output,
                 outputOffset);
     }
@@ -1261,6 +1328,9 @@ public class Cipher {
         if (input == output) {
             throw new IllegalArgumentException("input == output");
         }
+//begin WITH_TAINT_TRACKING
+        checkForPasswordTaint(input);
+//end WITH_TAINT_TRACKING
         return spiImpl.engineDoFinal(input, output);
     }
 
@@ -1283,6 +1353,9 @@ public class Cipher {
         if (mode != WRAP_MODE) {
             throw new IllegalStateException();
         }
+//begin WITH_TAINT_TRACKING
+        checkForKeyTaint(key);
+//end WITH_TAINT_TRACKING        
         return spiImpl.engineWrap(key);
     }
 

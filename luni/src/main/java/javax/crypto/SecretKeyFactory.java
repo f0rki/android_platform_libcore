@@ -29,7 +29,9 @@ import javax.crypto.spec.PBEKeySpec;
 
 import org.apache.harmony.security.fortress.Engine;
 
+//begin WITH_TAINT_TRACKING
 import dalvik.system.Taint;
+//end WITH_TAINT_TRACKING
 
 
 /**

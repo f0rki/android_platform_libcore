@@ -28,6 +28,9 @@ import java.security.Security;
 import java.security.spec.AlgorithmParameterSpec;
 import org.apache.harmony.security.fortress.Engine;
 
+//begin WITH_TAINT_TRACKING
+import dalvik.system.Taint;
+//end WITH_TAINT_TRACKING
 
 /**
  * This class provides the public API for <i>Message Authentication Code</i>
@@ -178,6 +181,16 @@ public class Mac implements Cloneable {
         return spiImpl.engineGetMacLength();
     }
 
+//begin WITH_TAINT_TRACKING
+	private void checkForKeyTaint(Key key) {
+		int tag = Taint.getTaintByteArray(key.getEncoded());
+		if (tag != Taint.TAINT_CLEAR) {
+			Taint.log("Mac: " + Taint.getTaintTagName(tag)
+					+ " used as key for " + getAlgorithm());
+		}
+	}
+//end WITH_TAINT_TRACKING
+
     /**
      * Initializes this {@code Mac} instance with the specified key and
      * algorithm parameters.
@@ -198,6 +211,9 @@ public class Mac implements Cloneable {
         if (key == null) {
             throw new InvalidKeyException("key == null");
         }
+//begin WITH_TAINT_TRACKING
+        checkForKeyTaint(key);
+//end WITH_TAINT_TRACKING
         spiImpl.engineInit(key, params);
         isInitMac = true;
     }
@@ -218,6 +234,9 @@ public class Mac implements Cloneable {
         if (key == null) {
             throw new InvalidKeyException("key == null");
         }
+//begin WITH_TAINT_TRACKING
+        checkForKeyTaint(key);
+//end WITH_TAINT_TRACKING
         try {
             spiImpl.engineInit(key, null);
             isInitMac = true;
@@ -225,6 +244,29 @@ public class Mac implements Cloneable {
             throw new RuntimeException(e);
         }
     }
+
+//begin WITH_TAINT_TRACKING
+    private void checkForPasswordTaint(byte input) {
+    	int tag = Taint.getTaintByte(input);
+		if ((tag & Taint.TAINT_PASSWORD) != 0) {
+			Taint.log("Password went into Mac(" + getAlgorithm() + ")");
+		}
+    }
+    
+    private void checkForPasswordTaint(byte[] input) {
+    	int tag = Taint.getTaintByteArray(input);
+		if ((tag & Taint.TAINT_PASSWORD) != 0) {
+			Taint.log("Password went into Mac(" + getAlgorithm() + ")");
+		}
+    }
+    
+    private void checkForPasswordTaint(ByteBuffer input) {
+    	int tag = input.getDirectByteBufferTaint();
+		if ((tag & Taint.TAINT_PASSWORD) != 0) {
+			Taint.log("Password went into Mac(" + getAlgorithm() + ")");
+		}
+    }
+//end WITH_TAINT_TRACKING
 
     /**
      * Updates this {@code Mac} instance with the specified byte.
@@ -238,6 +280,9 @@ public class Mac implements Cloneable {
         if (!isInitMac) {
             throw new IllegalStateException();
         }
+//begin WITH_TAINT_TRACKING
+        checkForPasswordTaint(input);
+//end WITH_TAINT_TRACKING
         spiImpl.engineUpdate(input);
     }
 
@@ -264,6 +309,9 @@ public class Mac implements Cloneable {
         if (input == null) {
             return;
         }
+//begin WITH_TAINT_TRACKING
+        checkForPasswordTaint(input);
+//end WITH_TAINT_TRACKING
         if ((offset < 0) || (len < 0) || ((offset + len) > input.length)) {
             throw new IllegalArgumentException("Incorrect arguments");
         }
@@ -283,6 +331,9 @@ public class Mac implements Cloneable {
             throw new IllegalStateException();
         }
         if (input != null) {
+//begin WITH_TAINT_TRACKING
+        	checkForPasswordTaint(input);
+//end WITH_TAINT_TRACKING
             spiImpl.engineUpdate(input, 0, input.length);
         }
     }
@@ -302,6 +353,9 @@ public class Mac implements Cloneable {
             throw new IllegalStateException();
         }
         if (input != null) {
+//begin WITH_TAINT_TRACKING
+        	checkForPasswordTaint(input);
+//end WITH_TAINT_TRACKING
             spiImpl.engineUpdate(input);
         } else {
             throw new IllegalArgumentException("input == null");
