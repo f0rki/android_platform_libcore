@@ -19,10 +19,38 @@ package org.apache.harmony.xnet.provider.jsse;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+//begin WITH_TAINT_TRACKING
+import dalvik.system.Taint;
+//end WITH_TAINT_TRACKING
+
+
 /**
  * Implements the JDK MessageDigest interface using OpenSSL's EVP API.
  */
 public class OpenSSLMessageDigestJDK extends MessageDigest implements Cloneable {
+	
+//begin WITH_TAINT_TRACKING
+	/* *** poor man's taint tracking ***
+	 *
+	 * This code here add's some primitive taint propagation, because the method 
+	 * profiles don't deal well with the OpenSSL CTX references.
+	 * 
+	 */
+	
+	private int taintTag = Taint.TAINT_CLEAR;
+	
+	private void propagateTaint(int tag) {
+		taintTag |= tag;
+	}
+	
+	private void addTaint(byte[] data) {
+		Taint.addTaintByteArray(data, taintTag);
+	}
+	
+	private void resetTaintTag() {
+		taintTag = Taint.TAINT_CLEAR;
+	}
+//end WITH_TAINT_TRACKING
 
     /**
      * Holds a pointer to the native message digest context.
@@ -57,6 +85,9 @@ public class OpenSSLMessageDigestJDK extends MessageDigest implements Cloneable 
 
     @Override
     protected void engineReset() {
+    	//begin WITH_TAINT_TRACKING
+    	resetTaintTag();
+    	//end WITH_TAINT_TRACKING
         free();
     }
 
@@ -68,11 +99,17 @@ public class OpenSSLMessageDigestJDK extends MessageDigest implements Cloneable 
     @Override
     protected void engineUpdate(byte input) {
         singleByte[0] = input;
+        //begin WITH_TAINT_TRACKING
+        propagateTaint(Taint.getTaintByte(input));
+    	//end WITH_TAINT_TRACKING
         engineUpdate(singleByte, 0, 1);
     }
 
     @Override
     protected void engineUpdate(byte[] input, int offset, int len) {
+        //begin WITH_TAINT_TRACKING
+        propagateTaint(Taint.getTaintByteArray(input));
+    	//end WITH_TAINT_TRACKING
         NativeCrypto.EVP_DigestUpdate(getCtx(), input, offset, len);
     }
 
@@ -81,6 +118,9 @@ public class OpenSSLMessageDigestJDK extends MessageDigest implements Cloneable 
         byte[] result = new byte[size];
         NativeCrypto.EVP_DigestFinal(getCtx(), result, 0);
         ctx = 0; // EVP_DigestFinal frees the context as a side effect
+        //begin WITH_TAINT_TRACKING
+        addTaint(result);
+    	//end WITH_TAINT_TRACKING
         return result;
     }
 
@@ -101,6 +141,9 @@ public class OpenSSLMessageDigestJDK extends MessageDigest implements Cloneable 
         if (ctx != 0) {
             NativeCrypto.EVP_MD_CTX_destroy(ctx);
             ctx = 0;
+            //begin WITH_TAINT_TRACKING
+        	resetTaintTag();
+        	//end WITH_TAINT_TRACKING
         }
     }
 
