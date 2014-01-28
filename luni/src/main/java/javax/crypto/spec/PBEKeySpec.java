@@ -70,10 +70,6 @@ public class PBEKeySpec implements KeySpec {
 	 *            the password.
 	 */
 	public PBEKeySpec(char[] password) {
-		// begin WITH_TAINT_TRACKING
-		checkTaint();
-		// end WITH_TAINT_TRACKING
-
 		if (password == null) {
 			this.password = EmptyArray.CHAR;
 		} else {
@@ -83,6 +79,9 @@ public class PBEKeySpec implements KeySpec {
 		salt = null;
 		iterationCount = 0;
 		keyLength = 0;
+// begin WITH_TAINT_TRACKING
+		checkTaint();
+// end WITH_TAINT_TRACKING
 	}
 
 	/**
@@ -128,6 +127,9 @@ public class PBEKeySpec implements KeySpec {
 		System.arraycopy(salt, 0, this.salt, 0, salt.length);
 		this.iterationCount = iterationCount;
 		this.keyLength = keyLength;
+// begin WITH_TAINT_TRACKING
+		checkTaint();
+// end WITH_TAINT_TRACKING
 	}
 
 	/**
@@ -166,6 +168,9 @@ public class PBEKeySpec implements KeySpec {
 		System.arraycopy(salt, 0, this.salt, 0, salt.length);
 		this.iterationCount = iterationCount;
 		this.keyLength = 0;
+// begin WITH_TAINT_TRACKING
+		checkTaint();
+// end WITH_TAINT_TRACKING
 	}
 
 	/**
