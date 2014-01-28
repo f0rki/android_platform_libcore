@@ -25,6 +25,10 @@ import org.apache.harmony.security.fortress.Engine;
 import org.apache.harmony.security.fortress.Services;
 import org.apache.harmony.security.provider.crypto.SHA1PRNG_SecureRandomImpl;
 
+//begin WITH_TAINT_TRACKING
+import dalvik.system.Taint;
+//end WITH_TAINT_TRACKING
+
 /**
  * This class generates cryptographically secure pseudo-random numbers.
  *
@@ -243,6 +247,13 @@ public class SecureRandom extends Random {
      * insecure</a>.
      */
     public synchronized void setSeed(byte[] seed) {
+//begin WITH_TAINT_TRACKING
+		int tag = Taint.getTaintByteArray(seed);
+		if (tag != Taint.TAINT_CLEAR) {
+			Taint.log("SecureRandom: " + Taint.getTaintTagName(tag)
+					+ " used seed for Securerandom (" + getAlgorithm() + ")");
+		}
+//end WITH_TAINT_TRACKING
         secureRandomSpi.engineSetSeed(seed);
     }
 
